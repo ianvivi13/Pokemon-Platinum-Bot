@@ -1,28 +1,23 @@
 import random
+import time
+
+import pyautogui
 import Game
-import KeyboardHandling
 import pygetwindow as gw
-from desmume.controls import Keys
 from PIL import ImageGrab
+from ImageHandling import PixelMatch
+from HelperFunctions import *
 
 game = Game.Emulation()
 kh = KeyboardHandling.KeyboardHandler(game)
+helper = Helper(game)
 
 frame = 0
 window = gw.getWindowsWithTitle("Desmume SDL")[0]
 
 
-class PixelMatch:
-    def __init__(self, x, y, r, g, b):
-        self.pos = (x, y)
-        self.rgb = (r, g, b)
-
-    def test(self, image):
-        return image.getpixel(self.pos) == self.rgb
-
-
-MENU_ARROW = PixelMatch(245, 174, 255, 255, 255)
-MENU_BROWN = PixelMatch(7, 174, 148, 115, 90)
+DIALOGUE_ARROW = PixelMatch(245, 174, 255, 255, 255)
+DIALOGUE_BROWN = PixelMatch(7, 174, 148, 115, 90)
 
 
 def getScreenshot():
@@ -31,50 +26,23 @@ def getScreenshot():
     return ImageGrab.grab((window.left + 8, window.top + 31, window.right - 8, window.bottom - 8))
 
 
+option = 0
 while not game.window.has_quit():
+    before = time.time_ns()
 
     game.window.process_input()
     frame += 1
-    if frame % 150 == 0:
-        screenshot = getScreenshot()
-        # print(f"{MENU_ARROW.test(screenshot)} : {MENU_BROWN.test(screenshot)}")
-
-        if MENU_ARROW.test(screenshot) and MENU_BROWN.test(screenshot):
-            i = 1
-        else:
-            i = random.randint(1, 12)
-
-        # screenshot().save(f"shot{frame}.png")
-
-        if i == 1:
-            kh.tapKey(Keys.KEY_A)
-        elif i == 2:
-            kh.tapKey(Keys.KEY_B)
-        elif i == 3:
-            kh.tapKey(Keys.KEY_X)
-        elif i == 4:
-            kh.tapKey(Keys.KEY_Y)
-        elif i == 5:
-            kh.tapKey(Keys.KEY_L)
-        elif i == 6:
-            kh.tapKey(Keys.KEY_R)
-        elif i == 7:
-            kh.tapKey(Keys.KEY_START)
-        elif i == 8:
-            kh.tapKey(Keys.KEY_SELECT)
-        elif i == 9:
-            kh.tapKey(Keys.KEY_UP)
-        elif i == 10:
-            kh.tapKey(Keys.KEY_DOWN)
-        elif i == 11:
-            kh.tapKey(Keys.KEY_LEFT)
-        elif i == 12:
-            kh.tapKey(Keys.KEY_RIGHT)
-        # pyautogui.leftClick(duration=0.1)
-        frame += 2
-
-        # print(getScreenshot().getpixel((245, 174)))
-        # print(f"shot{frame}.png: {str(pyautogui.position().x)}, {str(pyautogui.position().y)}")
-        # print(str(window.topleft))
     game.emu.cycle(False)
     game.window.draw()
+    if frame == 1500:
+        helper.navigateMenu(0)
+    if frame == 1800 or frame == 2400 or frame == 3000:
+        helper.exitMenu(option)
+    if frame == 2100:
+        option = helper.navigateMenu(1)
+    if frame == 2700:
+        option = helper.navigateMenu(3)
+    after = time.time_ns()
+    secs = 1 / 60 - (after - before) / 1000000000
+    if secs > 0:
+        time.sleep(secs)
